@@ -1,6 +1,6 @@
 [submodule "lib/discamb"]
 	path = lib/discamb
-	url = https://github.com/discamb-project/DiSCaMB.git
+	url = https://github.com/UnnamedShadow/DiSCaMB-gpu.git
 [submodule "data/MATTS"]
 	path = data/MATTS
 	url = https://github.com/discamb-project/MATTS.git
