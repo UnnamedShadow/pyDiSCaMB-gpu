@@ -52,27 +52,43 @@ find_package(pybind11 CONFIG REQUIRED)
 # OpenMP (find before discamb to ensure consistent configuration)
 find_package(OpenMP)
 
+option(USE_AMDGPU "Use AMDGPU backend for OpenMP offload" OFF)
+
 # Configure OpenMP GPU offloading flags if OpenMP is found
 if(OpenMP_FOUND)
   add_definitions(-DUSE_GPU_OFFLOAD)
 
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    # GCC with nvptx offloading
-    # CRITICAL: Add -fno-lto to disable LTO and avoid pulling CF protection into offload
-    set(_omf "-fopenmp -foffload=-lm -fno-lto")
-    # Add path to cuda toolkit
-    set(_omf "${_omf} -I/usr/local/cuda/include")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/cuda/lib64")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L/usr/local/cuda/lib64")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -L/usr/local/cuda/lib64")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_omf}")
-    # Also disable LTO in linker flags
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-lto")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fno-lto")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fno-lto")
+    if(USE_AMDGPU)
+      # GCC with amdgcn offloading
+      set(_omf "-fopenmp -foffload=amdgcn-amdhsa- -fno-lto")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_omf}")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-lto")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fno-lto")
+      set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fno-lto")
+    else()
+      # GCC with nvptx offloading
+      # CRITICAL: Add -fno-lto to disable LTO and avoid pulling CF protection into offload
+      set(_omf "-fopenmp -foffload=-lm -fno-lto")
+      # Add path to cuda toolkit
+      set(_omf "${_omf} -I/usr/local/cuda/include")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/cuda/lib64")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L/usr/local/cuda/lib64")
+      set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -L/usr/local/cuda/lib64")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_omf}")
+      # Also disable LTO in linker flags
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-lto")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fno-lto")
+      set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fno-lto")
+    endif()
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    set(_omf "-fopenmp -fopenmp-targets=nvptx64-nvidia-cuda")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_omf}")
+    if(USE_AMDGPU)
+      set(_omf "-fopenmp -fopenmp-targets=amdgcn-amd-amdhsa")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_omf}")
+    else()
+      set(_omf "-fopenmp -fopenmp-targets=nvptx64-nvidia-cuda")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_omf}")
+    endif()
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
     set(_omf "-fopenmp -fopenmp-targets=spir64")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_omf}")

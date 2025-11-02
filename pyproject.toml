@@ -31,7 +31,7 @@ build-backend = "scikit_build_core.build"
 dev = ["pytest", "pytest-xdist", "pre-commit"]
 
 [tool.scikit-build]
-cmake.define = {CMAKE_C_COMPILER = "/usr/bin/gcc-15", CMAKE_CXX_COMPILER = "/usr/bin/g++-15"}
+
 # The build type to use when building the project.
 cmake.build-type = "Release"
 
